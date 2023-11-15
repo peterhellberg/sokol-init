@@ -14,7 +14,8 @@ import (
 var content embed.FS
 
 type config struct {
-	dir string
+	dir    string
+	noMath bool
 }
 
 func main() {
@@ -28,6 +29,8 @@ func run(args []string, stdout io.Writer) error {
 	var cfg config
 
 	flags := flag.NewFlagSet(args[0], flag.ExitOnError)
+
+	flags.BoolVar(&cfg.noMath, "no-math", false, "Do not include src/math.zig")
 
 	flags.Usage = func() {
 		format := "Usage: %s [OPTION]... DIRECTORY\n\nOptions:\n"
@@ -85,6 +88,10 @@ func run(args []string, stdout io.Writer) error {
 
 				for _, e := range srcEntries {
 					if !e.IsDir() {
+						if e.Name() == "math.zig" && cfg.noMath {
+							continue
+						}
+
 						if err := writeFile(cfg, "src/"+e.Name(), replacer); err != nil {
 							return err
 						}
