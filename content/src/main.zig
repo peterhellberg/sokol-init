@@ -5,12 +5,15 @@ const app = sokol.app;
 const gfx = sokol.gfx;
 const log = sokol.log;
 
-var pa: gfx.PassAction = .{};
+const state = struct {
+    var pa: gfx.PassAction = .{};
+};
 
 pub fn main() void {
     app.run(.{
         .init_cb = init,
         .frame_cb = frame,
+        .event_cb = input,
         .cleanup_cb = cleanup,
         .width = 1280,
         .height = 720,
@@ -26,7 +29,7 @@ export fn init() void {
         .logger = .{ .func = log.func },
     });
 
-    pa.colors[0] = .{
+    state.pa.colors[0] = .{
         .load_action = .CLEAR,
         .clear_value = .{ .r = 1, .g = 0, .b = 0, .a = 1 },
     };
@@ -35,13 +38,24 @@ export fn init() void {
 }
 
 export fn frame() void {
-    const g = pa.colors[0].clear_value.g + 0.001;
+    const g = state.pa.colors[0].clear_value.g + 0.001;
 
-    pa.colors[0].clear_value.g = if (g > 1.0) 0.0 else g;
+    state.pa.colors[0].clear_value.g = if (g > 1.0) 0.0 else g;
 
-    gfx.beginDefaultPass(pa, app.width(), app.height());
+    gfx.beginDefaultPass(state.pa, app.width(), app.height());
     gfx.endPass();
     gfx.commit();
+}
+
+export fn input(event: ?*const app.Event) void {
+    const ev = event.?;
+
+    if (ev.type == .KEY_DOWN) {
+        switch (ev.key_code) {
+            .Q, .ESCAPE => app.requestQuit(),
+            else => {},
+        }
+    }
 }
 
 export fn cleanup() void {
