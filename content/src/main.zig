@@ -53,6 +53,7 @@ export fn input(event: ?*const app.Event) void {
     if (ev.type == .KEY_DOWN) {
         switch (ev.key_code) {
             .Q, .ESCAPE => app.requestQuit(),
+            .F => app.toggleFullscreen(),
             else => {},
         }
     }
