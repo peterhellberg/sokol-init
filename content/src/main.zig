@@ -31,7 +31,7 @@ export fn init() void {
 
     state.pa.colors[0] = .{
         .load_action = .CLEAR,
-        .clear_value = .{ .r = 1, .g = 0, .b = 0, .a = 1 },
+        .clear_value = .{ .r = 0.486, .g = 0.686, .b = 0.235, .a = 1 },
     };
 
     std.debug.print("Backend: {}\n", .{gfx.queryBackend()});
