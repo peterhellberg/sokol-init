@@ -8,11 +8,6 @@ This is a command line tool that helps you start a
 allows you to promptly get started coding with Sokol (via the
 [sokol-zig](https://github.com/floooh/sokol-zig) bindings)
 
-> [!Important]
-> For now, the somewhat outdated [package](https://github.com/floooh/sokol-zig/tree/package)
-> branch of `sokol-zig` is used. Hopefully its experimental support for Zig package
-> management will land in `master` soon 🤞
-
 ## Installation
 
 (Requires you to have [Go](https://go.dev/) installed)
