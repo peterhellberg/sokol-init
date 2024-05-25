@@ -4,10 +4,9 @@ const sokol = @import("sokol");
 const app = sokol.app;
 const gfx = sokol.gfx;
 const log = sokol.log;
+const glue = sokol.glue;
 
-const state = struct {
-    var pa: gfx.PassAction = .{};
-};
+var pass: gfx.PassAction = .{};
 
 pub fn main() void {
     app.run(.{
@@ -18,31 +17,32 @@ pub fn main() void {
         .width = 1280,
         .height = 720,
         .icon = .{ .sokol_default = true },
-        .logger = .{ .func = log.func },
         .window_title = "sokol-init",
+        .logger = .{ .func = log.func },
+        .win32_console_attach = true,
     });
 }
 
 export fn init() void {
     gfx.setup(.{
-        .context = sokol.app_gfx_glue.context(),
+        .environment = glue.environment(),
         .logger = .{ .func = log.func },
     });
 
-    state.pa.colors[0] = .{
+    pass.colors[0] = .{
         .load_action = .CLEAR,
-        .clear_value = .{ .r = 0.486, .g = 0.686, .b = 0.235, .a = 1 },
+        .clear_value = .{ .r = 0, .g = 0, .b = 0, .a = 1 },
     };
 
     std.debug.print("Backend: {}\n", .{gfx.queryBackend()});
 }
 
 export fn frame() void {
-    const g = state.pa.colors[0].clear_value.g + 0.001;
+    const g = pass.colors[0].clear_value.g + 0.005;
 
-    state.pa.colors[0].clear_value.g = if (g > 1.0) 0.0 else g;
+    pass.colors[0].clear_value.g = if (g > 1.0) 0.3 else g;
 
-    gfx.beginDefaultPass(state.pa, app.width(), app.height());
+    gfx.beginPass(.{ .action = pass, .swapchain = glue.swapchain() });
     gfx.endPass();
     gfx.commit();
 }

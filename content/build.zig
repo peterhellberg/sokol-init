@@ -13,9 +13,7 @@ pub fn build(b: *std.Build) !void {
         .name = "sokol-init",
         .target = target,
         .optimize = optimize,
-        .root_source_file = .{
-            .path = "src/main.zig",
-        },
+        .root_source_file = b.path("src/main.zig"),
     });
 
     exe.root_module.addImport("sokol", sokol.module("sokol"));

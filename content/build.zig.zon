@@ -4,8 +4,8 @@
     .paths = .{"src/main.zig"},
     .dependencies = .{
         .sokol = .{
-            .url = "git+https://github.com/floooh/sokol-zig.git#e0df69dc8ca17053bfa48ecec46dde02acb4395b",
-            .hash = "122070b288a2a945ad54ffef1c3809f67c136e9813d294ffea209abf7f3171a4b8e6",
+            .url = "https://github.com/floooh/sokol-zig/archive/5f15d2feee0c39c449160a351cff6ac44da252ac.tar.gz",
+            .hash = "12207c7752a3e966ba776d730a1c19bec5fb4d31a59cccecbb2b147e30b6828ea910",
         },
     },
 }
