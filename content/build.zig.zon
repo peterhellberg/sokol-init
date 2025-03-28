@@ -1,11 +1,12 @@
 .{
-    .name = "sokol-init",
+    .name = .sokol_init,
+    .fingerprint = 0xaf14342a89e8115e,
     .version = "0.0.0",
     .paths = .{"src/main.zig"},
     .dependencies = .{
         .sokol = .{
-            .url = "https://github.com/floooh/sokol-zig/archive/5f15d2feee0c39c449160a351cff6ac44da252ac.tar.gz",
-            .hash = "12207c7752a3e966ba776d730a1c19bec5fb4d31a59cccecbb2b147e30b6828ea910",
+            .url = "https://github.com/floooh/sokol-zig/archive/38c5d4c35b375c8aa4e104c1db8d218b588cf293.tar.gz",
+            .hash = "sokol-0.1.0-pb1HK46pLACblkKEuBJAHV6dapSeaWooJO87AN5tickD",
         },
     },
 }
