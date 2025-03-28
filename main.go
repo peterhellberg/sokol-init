@@ -1,13 +1,16 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"embed"
 	"flag"
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 //go:embed all:content
@@ -16,19 +19,27 @@ var content embed.FS
 type config struct {
 	dir      string
 	withMath bool
+	zon      ZON
+}
+
+type ZON struct {
+	name        string
+	fingerprint string
 }
 
 func main() {
-	if err := run(os.Args, os.Stdout); err != nil {
+	if err := run(os.Args, os.Stderr); err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		os.Exit(1)
 	}
 }
 
-func run(args []string, stdout io.Writer) error {
+func parse(args []string, stderr io.Writer) (config, error) {
 	var cfg config
 
 	flags := flag.NewFlagSet(args[0], flag.ExitOnError)
+
+	flags.SetOutput(stderr)
 
 	flags.BoolVar(&cfg.withMath, "with-math", false, "Include src/math.zig")
 
@@ -41,17 +52,33 @@ func run(args []string, stdout io.Writer) error {
 	}
 
 	if err := flags.Parse(args[1:]); err != nil {
-		return err
+		return cfg, err
 	}
 
 	rest := flags.Args()
 
 	// Require a directory name
 	if len(rest) < 1 {
-		return fmt.Errorf("no name given as the first argument")
+		return cfg, fmt.Errorf("no name given as the first argument")
 	}
 
 	cfg.dir = rest[0]
+
+	zon, err := initZON(cfg.dir)
+	if err != nil {
+		return cfg, err
+	}
+
+	cfg.zon = zon
+
+	return cfg, nil
+}
+
+func run(args []string, stderr io.Writer) error {
+	cfg, err := parse(args, stderr)
+	if err != nil {
+		return err
+	}
 
 	// Make sure that dir does not already exist
 	if _, err := os.Stat(cfg.dir); !os.IsNotExist(err) {
@@ -78,7 +105,6 @@ func run(args []string, stdout io.Writer) error {
 			if err := writeFile(cfg, e.Name(), replacer); err != nil {
 				return err
 			}
-
 		} else {
 			if e.Name() == "src" {
 				srcEntries, err := content.ReadDir("content/src")
@@ -114,7 +140,7 @@ func writeFile(cfg config, name string, dataFuncs ...dataFunc) error {
 		data = dataFuncs[i](cfg, name, data)
 	}
 
-	return os.WriteFile(name, data, 0644)
+	return os.WriteFile(name, data, 0o644)
 }
 
 type dataFunc func(config, string, []byte) []byte
@@ -127,8 +153,12 @@ func replacer(cfg config, name string, data []byte) []byte {
 	}
 
 	switch name {
-	case "build.zig", "build.zig.zon", "README.md", "src/main.zig":
+	case "build.zig", "README.md", "src/main.zig":
 		return replaceOne(data, "sokol-init", title)
+	case "build.zig.zon":
+		data = replaceOne(data, ".sokol_init", cfg.zon.name)
+		data = replaceOne(data, "0xaf14342a89e8115e", cfg.zon.fingerprint)
+		return data
 	default:
 		return data
 	}
@@ -136,4 +166,65 @@ func replacer(cfg config, name string, data []byte) []byte {
 
 func replaceOne(data []byte, old, new string) []byte {
 	return bytes.Replace(data, []byte(old), []byte(new), 1)
+}
+
+func initZON(dir string) (ZON, error) {
+	tmp, err := os.MkdirTemp("", "sokol-init-")
+	if err != nil {
+		return ZON{}, err
+	}
+	defer os.RemoveAll(tmp)
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		return ZON{}, err
+	}
+	defer os.Chdir(cwd)
+
+	tmpDir := filepath.Join(tmp, dir)
+
+	if err := os.Mkdir(tmpDir, 0o755); err != nil {
+		return ZON{}, err
+	}
+
+	if err := os.Chdir(tmpDir); err != nil {
+		return ZON{}, err
+	}
+
+	cmd := exec.Command("zig", "init")
+
+	if err := cmd.Run(); err != nil {
+		return ZON{}, err
+	}
+
+	zonPath := filepath.Join(tmpDir, "build.zig.zon")
+
+	return extractZON(zonPath)
+}
+
+func extractZON(zonPath string) (ZON, error) {
+	var zon ZON
+
+	f, err := os.Open(zonPath)
+	if err != nil {
+		return zon, err
+	}
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
+
+	for scanner.Scan() {
+		text := strings.TrimSpace(scanner.Text())
+
+		if prefix := ".name = "; strings.Contains(text, prefix) {
+			zon.name = strings.TrimSuffix(strings.TrimPrefix(text, prefix), ",")
+		}
+
+		if prefix := ".fingerprint = "; strings.Contains(text, prefix) {
+			fingerprint, _, _ := strings.Cut(strings.TrimPrefix(text, prefix), ",")
+			zon.fingerprint = fingerprint
+		}
+	}
+
+	return zon, nil
 }
